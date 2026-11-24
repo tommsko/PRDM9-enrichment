@@ -1,0 +1,18 @@
+# PRDM9 enrichment pipeline configuration.
+# Every value can be overridden on the command line:  python prdm9.py run --config threads=32
+
+# Where inputs are downloaded and where everything is computed (relative to the repository root).
+data_dir: data
+results_dir: results
+
+# Worker processes per stage (the manuscript runs used 64). `prdm9.py run --cores` defaults to this.
+threads: 64
+
+# Statistical settings (manuscript values; lower them only for quick smoke runs).
+mc_iterations: 200000     # Monte Carlo iterations in 3a / 3c
+bootstrap: 5000           # bootstrap replicates in 3b
+
+# Inputs with no public source for the exact file (G4 loop-class files, four GSE99407 histone tracks, the
+# merged RRBS file, the hg38 DSB map) are fetched from here: <provided_inputs_url>/<file name>.
+# Leave empty to place them by hand into data/ (paths in config/inputs.yaml); `fetch` verifies their md5.
+provided_inputs_url: ""

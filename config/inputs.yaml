@@ -1,0 +1,135 @@
+# Input data manifest. `python prdm9.py fetch` materialises every entry under data/ (config data_dir).
+# Every input is the exact file used for the manuscript (md5-checked); nothing is re-derived with methods or
+# settings that differ from the original work.
+#
+# kind:
+#   download  fetched from `url` (optionally checking `url_md5` of the downloaded object), then `steps`
+#             are applied in order: gunzip | strip_track (drop a leading UCSC "track" line) | head:N
+#   derived   built by the named rule in workflow/rules/data.smk; only used where the result is byte-identical
+#   provided  no public source for the exact file (authors' own derivation, steps not documented); fetched
+#             from config `provided_inputs_url`/<file name> (or placed by hand) and checked against `md5`
+# md5:     md5 of the file exactly as used; any mismatch is an error
+#
+# Provenance was traced on 2026-11-23/24: every `download` entry was matched byte-for-byte to the file used.
+
+genome:
+  hg38.fa:
+    kind: download
+    url: https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/initial/hg38.fa.gz
+    url_md5: 1c9dcaddfa41027f17cd8f7a82c7293b
+    steps: [gunzip]
+    md5: b2aee9f885accc00531e59c4736bee63
+    source: UCSC hg38 initial release (2014-01-15, 455 sequences; NOT bigZips/latest = p14)
+  hg38.fa.fai:
+    kind: derived
+    rule: genome_index
+    md5: 1954682fe412d4c5f8b93ad8e4083181
+    recipe: samtools faidx (pysam.faidx) of hg38.fa
+
+prdm9:
+  prdm9_peaks/HEK293_PRDM9-B_HA_MACS2_hg38.bed:
+    kind: download
+    url: https://raw.githubusercontent.com/angelikaLahn/PRDM9_G4_overlap/48750027e5b1609c7e6fe3a74fdfb78c521b4dab/datasets/ChIPseeker/HEK293_PRDM9-B_HA_MACS2_hg38.bed
+    md5: 6dc00b4021b540eb0d504f45d54b4021
+    source: MACS2 peaks (Galaxy) on GEO GSE99407 HumanPRDM9_HA anti-HA vs input; authors' GitHub, pinned commit
+
+g4:
+  g4/pqsfinder_hg38.bed:
+    kind: download
+    url: https://pqsfinder.fi.muni.cz/hub/hg38/pqsfinder_hg38.bed
+    md5: 6bc2d5dceec34a9b593dd751a417c73a
+    source: pqsfinder v2.0.1 genome-wide hg38 track (file dated 2019-05-07), 1,352,359 PQSs, min score 52
+  g4/HEK293_G4s_hg38.bed:
+    kind: download
+    url: https://raw.githubusercontent.com/angelikaLahn/PRDM9_G4_overlap/48750027e5b1609c7e6fe3a74fdfb78c521b4dab/datasets/ChIPseeker/HEK293_G4s_hg38.bed
+    md5: 29655117b69960051bacb390c801c33c
+    source: >-
+      BG4 CUT&Tag consensus (>= 2 of 10 SEACR datasets, the authors' scripts/01_identify_shared_G4_peaks.sh),
+      authors' GitHub, pinned commit
+  g4/G4s_short_pqsfinder_hg38.txt:
+    kind: provided
+    md5: b1dc6251a23d80285027470b78711ee3
+    source: >-
+      pqsfinder hg38 motifs (with sequence) classified as canonical short-loop (1-3 nt) by the authors; G2-4 runs.
+      The exact classification script is not public (the GitHub 05_canonical_G4_loop_lengths.R uses G3-4 and
+      reproduces <15% of the file; G2-4 reproduces Short 99.5%, Medium/Long ~85%). Ask the authors for the script.
+  g4/G4s_median_pqsfinder_hg38.txt:
+    kind: provided
+    md5: 7f5736526cf39a1babfd6e3520ab1118
+    source: as above, medium loops (4-6 nt)
+  g4/G4s_long_pqsfinder_hg38.txt:
+    kind: provided
+    md5: d2d5ab988620aaafd4fab61fc4dc4a6f
+    source: as above, long loops (7-12 nt)
+
+methylation:
+  methylation/HEK_RRBS_DNAmet_R1+R2_hg38.sorted.bed:
+    kind: provided
+    md5: b178a11f662c335d8203f36cec3d8e9b
+    source: >-
+      merged HEK293 RRBS (ENCODE ENCSR794HFF replicates ENCFF001TMQ / ENCFF001TMR, bedMethyl) as used by stage 2b.
+     
+      Steps not documented.
+
+motifs:
+  motifs/motifs.txt:
+    kind: download
+    url: https://cdn.elifesciences.org/articles/28383/elife-28383-fig1-data2-v2.txt
+    url_md5: 1ae6f92ab751903c24bdcf2a367885c6
+    steps: ["head:568"]
+    md5: 76d36747cb7bb6042dd01f21c22199b2
+    source: Altemose et al. 2017 eLife, Figure 1-source data 2; first 568 lines = human motifs Human1-17
+
+accessibility:
+  accessibility/ENCFF668ATM.bigWig:
+    kind: download
+    url: https://www.encodeproject.org/files/ENCFF668ATM/@@download/ENCFF668ATM.bigWig
+    md5: 0c1426af95a49f253599359224667995
+    source: ENCODE annotation ENCSR205FUM (Avocado imputed ATAC-seq, HEK293), GRCh38 signal p-value bigWig
+
+recombination:
+  meiotic_recombination/meiotic_recombination_DSB_map_hg38.bed:
+    kind: provided
+    md5: b380b6d3382db7d966ce5cf6c93bca24
+    source: >-
+      Pratto et al. 2014 A/A hotspots (GSE59836 table, AA_hotspots == 1, columns 1-3; this hg19 step reproduces
+      exactly) lifted to hg38 by the authors (name = original hg19 position); liftOver tool/settings unknown.
+
+histone_marks:
+  histone_marks/ENCFF498ERO_HEK_H3K4me3_R1_hg38.bed:
+    kind: download
+    url: https://www.encodeproject.org/files/ENCFF498ERO/@@download/ENCFF498ERO.bed.gz
+    url_md5: c21c15f4c5c354ff9b2f22897121255e
+    steps: [gunzip]
+    md5: 4a3d328e346e371d94e11092e030682b
+    source: ENCODE H3K4me3 HEK293 (ENCSR000DTU) rep1 peaks, GRCh38 narrowPeak
+  histone_marks/ENCFF127YXW_HEK_H3K4me3_R2_hg38.bed:
+    kind: download
+    url: https://www.encodeproject.org/files/ENCFF127YXW/@@download/ENCFF127YXW.bed.gz
+    url_md5: e0e49136c86a3b60ce35e6e1c887013f
+    steps: [gunzip]
+    md5: 3630a67e70b4eaf38374be6182a47a23
+    source: ENCODE H3K4me3 HEK293 (ENCSR000DTU) rep2 peaks, GRCh38 narrowPeak
+  histone_marks/ENCFF224LEB_HEK_H3K36me3_R1_2_hg38.bed:
+    kind: download
+    url: https://www.encodeproject.org/files/ENCFF224LEB/@@download/ENCFF224LEB.bed.gz
+    url_md5: 5216794ef281c01631e21aceba8d3c87
+    steps: [gunzip]
+    md5: dcf6131c8f6c072fe5985cfcdcba43b1
+    source: ENCODE H3K36me3 HEK293 (ENCSR000FCK) replicated peaks, GRCh38 narrowPeak
+  histone_marks/HEK293_H3K4me3_PRDM9-B_HA_transfected.bed:
+    kind: provided
+    md5: 2428a16f8171bbb191fa3fe56500838f
+    source: derived by the authors from GEO GSE99407 H3K4me3 peaks (hg19; likely HumanPRDM9_HA.antiH3K4me3.protocolC) + liftover; exact steps unknown
+  histone_marks/HEK293_H3K4me3_untransfected.bed:
+    kind: provided
+    md5: abead5744038f61e51302e125e0ab913
+    source: derived by the authors from GSE99407 Untransfected.antiH3K4me3 peaks (hg19; likely protocolC) + liftover; exact steps unknown
+  histone_marks/HEK293_H3K36me3_PRDM9-B-HA_transfected.bed:
+    kind: provided
+    md5: 065523e7dc1199cddae76235c32970ee
+    source: peaks called by the authors from GSE99407 GSM2643622 H3K36me3 bedGraph (hg19) + liftover; method unknown
+  histone_marks/HEK293_H3K36me3_untransfected.bed:
+    kind: provided
+    md5: 679d68ee97f1c1ffdb9288050c8a0a07
+    source: peaks called by the authors from GSE99407 GSM2643621 H3K36me3 bedGraph (hg19) + liftover; method unknown

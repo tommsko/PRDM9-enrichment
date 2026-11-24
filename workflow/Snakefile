@@ -1,0 +1,99 @@
+# PRDM9 enrichment pipeline.
+#
+#   data/      inputs, downloaded / rebuilt by the rules in workflow/rules/data.smk (manifest: config/inputs.yaml)
+#   results/   the workspace: symlinks to the inputs + every stage's output folder, laid out exactly like the
+#              directory the manuscript notebooks were developed in, so the converted notebooks run unchanged.
+#
+# Run through `python prdm9.py run [target]`. Targets: all, data, fig2a, fig3.
+
+import os
+from pathlib import Path
+
+configfile: "config/config.yaml"
+
+REPO = Path(workflow.basedir).parent
+DATA = Path(config["data_dir"])
+RES = Path(config["results_dir"])
+DONE = RES / ".done"
+LOGS = RES / "logs"
+
+
+include: "rules/data.smk"
+
+
+def stage_env():
+    """Environment for every compute step: config -> PRDM9_* variables read by the stage scripts."""
+    return (
+        f"PYTHONPATH={REPO}{os.pathsep}$PYTHONPATH "
+        f"PRDM9_WORKDIR={RES.resolve()} "
+        f"PRDM9_THREADS={config['threads']} "
+        f"PRDM9_MC_ITERS={config['mc_iterations']} "
+        f"PRDM9_N_BOOT={config['bootstrap']} "
+        f"MPLBACKEND=Agg PYTHONUNBUFFERED=1"
+    )
+
+
+def run_module(module):
+    """Shell command: run a Python module inside the workspace, log it, mark it done."""
+    name = module.rsplit(".", 1)[-1]
+    return (
+        f"cd {RES} && env {stage_env()} python -m {module} > {LOGS.resolve()}/{name}.log 2>&1 "
+        f"&& date -Iseconds > {DONE.resolve()}/{name}"
+    )
+
+
+# --------------------------------------------------------------------------- workspace
+WORKSPACE_LINKS = ["hg38.fa", "hg38.fa.fai", "prdm9_peaks", "g4", "methylation", "motifs", "accessibility",
+                   "meiotic_recombination", "histone_marks"]
+
+rule workspace:
+    """results/ with symlinks to the inputs (mirrors the notebooks' working directory)."""
+    input: DATA / ".verified"
+    output: touch(DONE / "workspace")
+    run:
+        RES.mkdir(parents=True, exist_ok=True)
+        LOGS.mkdir(parents=True, exist_ok=True)
+        for name in WORKSPACE_LINKS:
+            link, target = RES / name, (DATA / name).resolve()
+            if link.is_symlink():
+                link.unlink()
+            elif link.exists():
+                raise ValueError(f"{link} exists and is not a link to the inputs; move it away or set results_dir")
+            link.symlink_to(target)
+
+
+# --------------------------------------------------------------------------- production (manuscript notebooks)
+STAGE_DEPS = {
+    "s1_sample_windows": [],
+    "s2a_feat_g4": ["s1_sample_windows"],
+    "s2b_feat_methylation": ["s1_sample_windows"],
+    "s2c_feat_motifs": ["s1_sample_windows"],
+    "s2d_feat_accessibility": ["s1_sample_windows"],
+    "s2e_feat_recombination": ["s1_sample_windows"],
+    "s2f_feat_histones": ["s1_sample_windows"],
+    "s2g_combine": ["s2a_feat_g4", "s2b_feat_methylation", "s2c_feat_motifs", "s2d_feat_accessibility",
+                    "s2e_feat_recombination", "s2f_feat_histones"],
+    "s3a_enrichment_g4": ["s1_sample_windows"],
+    "s3b_enrichment_g4seq": ["s1_sample_windows"],
+    "s3c_enrichment_all": ["s2g_combine"],
+}
+
+for _stage, _deps in STAGE_DEPS.items():
+    rule:
+        name: _stage
+        input: [DONE / "workspace"] + [DONE / d for d in _deps]
+        output: DONE / _stage
+        threads: workflow.cores
+        shell: run_module(f"prdm9_pipeline.stages.{_stage}")
+
+
+# --------------------------------------------------------------------------- targets
+rule fig2a:
+    input: DONE / "s3c_enrichment_all"
+
+rule fig3:
+    input: DONE / "s3a_enrichment_g4"
+
+rule all:
+    default_target: True
+    input: [DONE / s for s in STAGE_DEPS]

@@ -1,0 +1,11 @@
+# pipeline (python prdm9.py ...)
+/data/
+/results/
+/.envs/
+/.tools/
+.snakemake/
+
+# python
+__pycache__/
+*.pyc
+.pytest_cache/
