@@ -15,6 +15,7 @@ import concurrent.futures as cf
 import datetime as dt
 import gzip
 import hashlib
+import re
 import shutil
 import sys
 import tempfile
@@ -151,15 +152,21 @@ def fetch_entry(e: Entry, data: Path, raw_dir: Path) -> str:
     return f"fetched  {e.path}"
 
 
+def asset_name(path: str) -> str:
+    """Name of a provided file on the host (e.g. a GitHub release): characters other than letters, digits,
+    '.', '-' and '_' become '.', as GitHub does for release assets (R1+R2 -> R1.R2)."""
+    return re.sub(r"[^A-Za-z0-9._-]", ".", Path(path).name)
+
+
 def fetch_provided(e: Entry, data: Path, url: str) -> str:
-    """Fetch a `provided` input from <url>/<file name>; returns a status line, or raises if unavailable."""
+    """Fetch a `provided` input from <url>/<asset name>; returns a status line, or raises if unavailable."""
     final = data / e.path
     if final.exists() and md5sum(final) == e.md5:
         return f"present  {e.path}"
     if not url:
         raise FileNotFoundError(e.path)
     final.parent.mkdir(parents=True, exist_ok=True)
-    download(f"{url.rstrip('/')}/{Path(e.path).name}", final)
+    download(f"{url.rstrip('/')}/{asset_name(e.path)}", final)
     if md5sum(final) != e.md5:
         raise RuntimeError(f"{e.path}: md5 mismatch after download from provided_inputs_url")
     return f"fetched  {e.path}"

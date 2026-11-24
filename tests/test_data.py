@@ -123,11 +123,21 @@ def test_cli_provided_reports_missing(tmp_path, capsys):
         assert path in err
 
 
+def test_asset_name():
+    assert D.asset_name("methylation/HEK_RRBS_DNAmet_R1+R2_hg38.sorted.bed") == "HEK_RRBS_DNAmet_R1.R2_hg38.sorted.bed"
+    assert D.asset_name("histone_marks/HEK293_H3K36me3_PRDM9-B-HA_transfected.bed") == "HEK293_H3K36me3_PRDM9-B-HA_transfected.bed"
+
+
+def test_provided_asset_names_are_unique():
+    names = [D.asset_name(e.path) for e in D.load_manifest(MANIFEST) if e.kind == "provided"]
+    assert len(names) == len(set(names)) == 9
+
+
 def test_fetch_provided(tmp_path):
     remote = tmp_path / "remote"
     remote.mkdir()
-    (remote / "x.bed").write_text("chr1\t1\t2\n")
-    e = D.Entry(path="g/x.bed", kind="provided", group="g", md5=D.md5sum(remote / "x.bed"))
+    (remote / "x.y.bed").write_text("chr1\t1\t2\n")
+    e = D.Entry(path="g/x+y.bed", kind="provided", group="g", md5=D.md5sum(remote / "x.y.bed"))
     assert D.fetch_provided(e, tmp_path / "data", remote.as_uri()).startswith("fetched")
     assert D.fetch_provided(e, tmp_path / "data", "").startswith("present")
     with pytest.raises(FileNotFoundError):

@@ -13,6 +13,7 @@ mc_iterations: 200000     # Monte Carlo iterations in 3a / 3c
 bootstrap: 5000           # bootstrap replicates in 3b
 
 # Inputs with no public source for the exact file (G4 loop-class files, four GSE99407 histone tracks, the
-# merged RRBS file, the hg38 DSB map) are fetched from here: <provided_inputs_url>/<file name>.
+# merged RRBS file, the hg38 DSB map) are fetched from here: <provided_inputs_url>/<file name>
+# ('+' and other special characters in the name become '.', as in GitHub release asset names).
 # Leave empty to place them by hand into data/ (paths in config/inputs.yaml); `fetch` verifies their md5.
 provided_inputs_url: ""
