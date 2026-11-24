@@ -15,5 +15,6 @@ bootstrap: 5000           # bootstrap replicates in 3b
 # Inputs with no public source for the exact file (G4 loop-class files, four GSE99407 histone tracks, the
 # merged RRBS file, the hg38 DSB map) are fetched from here: <provided_inputs_url>/<file name>
 # ('+' and other special characters in the name become '.', as in GitHub release asset names).
-# Leave empty to place them by hand into data/ (paths in config/inputs.yaml); `fetch` verifies their md5.
-provided_inputs_url: ""
+# Default: the inputs-v1 release of this repository. Empty = place them by hand into data/ (paths in
+# config/inputs.yaml); `fetch` verifies their md5 either way.
+provided_inputs_url: https://github.com/tommsko/PRDM9-enrichment/releases/download/inputs-v1

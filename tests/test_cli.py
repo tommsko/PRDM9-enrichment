@@ -18,7 +18,7 @@ def test_read_config_value_matches_yaml():
     cfg = yaml.safe_load(cli.CONFIG.read_text())
     for key in ("data_dir", "results_dir", "threads", "mc_iterations", "bootstrap"):
         assert cli.read_config_value(key, "?").lower() == str(cfg[key]).lower(), key
-    assert cli.read_config_value("provided_inputs_url", "default") == "default"     # empty -> default
+    assert cli.read_config_value("provided_inputs_url", "?").startswith("https://github.com/")
     assert cli.read_config_value("no_such_key", "x") == "x"
 
 

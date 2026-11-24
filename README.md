@@ -51,7 +51,7 @@ single run, e.g. `python prdm9.py run --config threads=32`.
 |---|---|---|
 | `threads` | 64 | worker processes per stage |
 | `mc_iterations` / `bootstrap` | 200000 / 5000 | Monte Carlo iterations (3a, 3c) and bootstrap replicates (3b); lower them only for smoke runs |
-| `provided_inputs_url` | empty | where to fetch the inputs that have no public source (see below) |
+| `provided_inputs_url` | release `inputs-v1` | where to fetch the inputs that have no public source (see below) |
 
 The defaults are the manuscript settings.
 
@@ -68,8 +68,10 @@ manuscript. `fetch` fails if any file differs.
   - ENCODE ATAC and histone peaks;
   - Altemose 2017 motifs.
 - **Rebuilt:** only the genome index (`hg38.fa.fai`), which comes out byte-identical.
-- **Provided:** these files were made by the authors with undocumented steps and are not published anywhere.
-  They are fetched from `provided_inputs_url` (or copied into `data/` by hand) and md5-checked:
+- **Provided:** these files were made by the authors with undocumented steps, so there is no original source to
+  download them from. They are attached to this repository's release
+  [`inputs-v1`](https://github.com/tommsko/PRDM9-enrichment/releases/tag/inputs-v1), and `fetch` downloads and
+  md5-checks them from there (config `provided_inputs_url`):
   - the pqsfinder loop-class files;
   - four GSE99407 histone tracks;
   - the merged RRBS file;
